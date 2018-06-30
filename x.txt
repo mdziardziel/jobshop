@@ -1,0 +1,155 @@
+import java.io.*;
+
+
+class Row {
+  Row(int time, int machine, Row earlRow){
+    this.earlRow = earlRow;
+    if(earlRow != null)
+    earlRow.nextRow = this;
+    this.time = time;
+    this.machine = machine;
+  }
+  private int time;
+  private int machine;
+  private int start;
+  private Row nextRow;
+  private Row earlRow;
+  public void setStart(int start){
+    this.start = start;
+  }
+  public int getTime(){
+    return time;
+  }
+  public int getStart(){
+    return start;
+  }
+  public int getStop(){
+    return start + time;
+  }
+  public int getMachine(){
+    return machine;
+  }
+  public void setNextRow(Row nextRow){
+    this.nextRow = nextRow;
+  }
+  public Row getNextRow(){
+    return nextRow;
+  }
+}
+
+class Data {
+  public int m;
+  public int n;
+  Row[][] tasks;
+  public void read() {
+    BufferedReader odczyt = new BufferedReader(new InputStreamReader(System.in));
+    try{
+      String[] x = odczyt.readLine().split(" ");
+      n = Integer.parseInt(x[0]); //number of table
+      m = Integer.parseInt(x[1]); //number of machines
+      tasks = new Row[n][3];
+      for(int i = 0; i < n; i++) {
+        x = odczyt.readLine().split(" ");
+        for(int j = 0; j < m; j++){
+          if(tasks[i][0] == null){
+            tasks[i][0] = new Row(Integer.parseInt(x[j*2+1]), Integer.parseInt(x[j*2]), null);
+            tasks[i][1] = tasks[i][0];
+          }
+          else{
+            Row nr = new Row(Integer.parseInt(x[(j*2)+1]), Integer.parseInt(x[j*2]), tasks[i][1]);
+            tasks[i][1].setNextRow(nr);
+            tasks[i][1] = nr;
+          }
+        }
+      }
+      odczyt.close();
+    }
+    catch(IOException ioe){
+      System.out.println("Problem z odczytem danych!");
+      System.exit(1);
+  }
+}
+
+  public void print() {
+    System.out.println("Tabela");
+    System.out.println(m + " " + n);
+    for(int i = 0; i < n; i++) {
+      Row x = tasks[i][0];
+      System.out.print(x.getMachine() + " " + x.getTime() + " ");
+      do{
+        x = x.getNextRow();
+        System.out.print(x.getMachine() + " " + x.getTime() + " ");
+      }while(x.getNextRow() != null);
+      System.out.println();
+    }
+  }
+}
+
+class Solve{
+  Data data;
+  String[] resul;
+  Row[][] tasks;
+  int[] table;
+  Solve(){
+
+  }
+  private int work(Row act, int i, int pom){
+    if(pom==-1){
+      act.setStart(tasks[i][2].getStop());
+    }
+    else{
+        act.setStart(table[act.getMachine()]);
+    }
+    table[act.getMachine()] = act.getStop();
+    if(resul[i] != "") resul[i] = resul[i] + " " + act.getStart();
+    else resul[i] = act.getStart() + "";
+    tasks[i][2] = act;
+    pom+=2;
+    return pom;
+  }
+  public void simple(){
+    data = new Data();
+    data.read();
+    tasks = data.tasks;
+    int n = data.n;
+    int m = data.m;
+    resul = new String[n];
+    for(int i = 0; i < n; i++) resul[i] = "";
+    table = new int[m];
+
+    int pom = 1;
+    while(pom != -2){
+      if(pom == 0) pom = -1;
+      else if(pom == -1) pom = -2;
+      else pom = 0;
+      for(int i = 0; i < n; i++){
+        if(tasks[i][2] == null) {
+          pom = work(tasks[i][0], i, pom);
+        }
+        else if(tasks[i][2].getNextRow() != null){
+          if(tasks[i][2].getStop() <= table[tasks[i][2].getNextRow().getMachine()] || pom == -1)
+            pom = work(tasks[i][2].getNextRow(), i, pom);
+        }
+      }
+    }
+  }
+  public void print() throws IOException{
+    BufferedWriter zapis = new BufferedWriter(new OutputStreamWriter(System.out));
+    for(int i = 0; i < data.n; i++){
+      zapis.write(resul[i]+ "\n");
+    }
+    zapis.flush();
+  }
+
+}
+
+
+
+
+class JobShop {
+  public static void main(String args[]) throws IOException{
+    Solve sol = new Solve();
+    sol.simple();
+    sol.print();
+  }
+}
